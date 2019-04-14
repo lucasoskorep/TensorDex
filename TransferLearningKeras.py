@@ -122,10 +122,11 @@ test_gen = test_idg.flow_from_directory(
 
 len(test_gen.filenames)
 
-score = model.evaluate_generator(test_gen, workers=1)
+score = model.evaluate_generator(test_gen, workers=1, steps=len(test_gen))
 
 # predicts
-predicts = model.predict_generator(test_gen, verbose=True, workers=1)
+predicts = model.predict_generator(test_gen, verbose=True, workers=1, steps=len(test_gen))
+
 
 print("Loss: ", score[0], "Accuracy: ", score[1])
 print(score)
