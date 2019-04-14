@@ -6,12 +6,14 @@ df = pd.read_csv("pokemon.csv")
 
 response = google_images_download.googleimagesdownload()
 
-for pokemon in df["identifier"][:251]:
+for pokemon in ["abra", "xatu", "yanma", "zapdos", "zubat"]:  # df["identifier"][:251]:
     absolute_image_paths = response.download(
         {
             "keywords": pokemon,
             "limit": 250,
-            "chromedriver": "/usr/lib/chromium-browser/chromedriver"
+            "chromedriver": "/usr/lib/chromium-browser/chromedriver",
+            # This needs to be changed based on the computer trying to download the images
+            "format": "jpg"
         }
     )
 
