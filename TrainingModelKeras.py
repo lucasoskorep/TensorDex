@@ -9,7 +9,7 @@ from time import time
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-input_shape = (224, 224, 3)
+input_shape = (299, 299, 3)
 batch_size = 32
 model_name = "MobileNetV2FullDatasetNoTransfer"
 
