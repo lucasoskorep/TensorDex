@@ -8,6 +8,12 @@ __pycache__/
 # C extensions
 *.so
 
+
+data/
+downloads/
+fortt/
+logs/
+
 # Distribution / packaging
 .Python
 build/
