@@ -6,7 +6,7 @@ df = pd.read_csv("pokemon.csv")
 
 response = google_images_download.googleimagesdownload()
 
-for pokemon in ["abra", "xatu", "yanma", "zapdos", "zubat"]:  # df["identifier"][:251]:
+for pokemon in df["identifier"][:251]:
     absolute_image_paths = response.download(
         {
             "keywords": pokemon,

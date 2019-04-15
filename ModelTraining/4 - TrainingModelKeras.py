@@ -1,33 +1,53 @@
-import tensorflow as tf
-import pandas as pd
-import numpy as np
-import os
-import seaborn as sn
+import keras
 import matplotlib.pyplot as plt
-from tensorflow import keras
+import numpy as np
+import pandas as pd
+import seaborn as sn
+
+from keras import optimizers
+from keras.applications import inception_v3, mobilenet_v2, vgg16
+from keras.applications.inception_v3 import preprocess_input
+from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
+from keras.layers import Dense, Dropout, GlobalAveragePooling2D
+from keras.models import Sequential
+from keras.preprocessing.image import ImageDataGenerator
+
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
 from time import time
 from PIL import ImageFile
+
+# First we some globals that we want to use for this entire process
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 input_shape = (299, 299, 3)
 batch_size = 32
-model_name = "MobileNetV2FullDatasetNoTransfer"
 
-from keras.preprocessing.image import ImageDataGenerator
-from keras.applications.inception_v3 import preprocess_input
+model_name = "InceptionV3Full"
 
+# Next we set up the Image Data Generators to feed into the training cycles.
+# We need one for training, validation, and testing
 train_idg = ImageDataGenerator(
-    # horizontal_flip=True,
+    horizontal_flip=True,
+    rotation_range=30,
+    width_shift_range=[-.1, .1],
+    height_shift_range=[-.1, .1],
     preprocessing_function=preprocess_input
 )
+
 train_gen = train_idg.flow_from_directory(
     './data/train',
     target_size=(input_shape[0], input_shape[1]),
     batch_size=batch_size
 )
+print(len(train_gen.classes))
 
 val_idg = ImageDataGenerator(
-    # horizontal_flip=True,
+    horizontal_flip=True,
+    rotation_range=30,
+    width_shift_range=[-.1, .1],
+    height_shift_range=[-.1, .1],
     preprocessing_function=preprocess_input
 )
 
@@ -36,31 +56,39 @@ val_gen = val_idg.flow_from_directory(
     target_size=(input_shape[0], input_shape[1]),
     batch_size=batch_size
 )
-from keras.applications import inception_v3, mobilenet_v2, vgg16
-from keras.models import Sequential
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
-from keras import optimizers
-from keras.layers import Dense, Dropout, GlobalAveragePooling2D
 
-nclass = len(train_gen.class_indices)
+test_idg = ImageDataGenerator(
+    preprocessing_function=preprocess_input,
+)
+test_gen = test_idg.flow_from_directory(
+    './data/test',
+    target_size=(input_shape[0], input_shape[1]),
+    batch_size=batch_size,
+    shuffle=False
+
+)
+
+# Now we define the model we are going to use....to use something differnet just comment it out or add it here
 
 # base_model = vgg16.VGG16(
 #     weights='imagenet',
 #     include_top=False,
 #     input_shape=input_shape
 # )
-# base_model = inception_v3.InceptionV3(
-#     weights='imagenet',
-#     include_top=False,
-#     input_shape=input_shape
-# )
-
-base_model = mobilenet_v2.MobileNetV2(
+base_model = inception_v3.InceptionV3(
     weights='imagenet',
     include_top=False,
     input_shape=input_shape
 )
 
+# base_model = mobilenet_v2.MobileNetV2(
+#     weights='imagenet',
+#     include_top=False,
+#     input_shape=input_shape
+# )
+
+
+# Create a new top for that model
 add_model = Sequential()
 add_model.add(base_model)
 add_model.add(GlobalAveragePooling2D())
@@ -70,7 +98,7 @@ add_model.add(
 # Potentially throw another dropout layer here if you seem to be overfitting your
 add_model.add(Dropout(0.5))
 add_model.add(Dense(512, activation='relu'))
-add_model.add(Dense(nclass, activation='softmax'))  # Decision layer
+add_model.add(Dense(len(train_gen.class_indices), activation='softmax'))  # Decision layer
 
 model = add_model
 model.compile(loss='categorical_crossentropy',
@@ -79,8 +107,12 @@ model.compile(loss='categorical_crossentropy',
               metrics=['accuracy'])
 model.summary()
 
-# Train the model
-file_path = "weights.mobilenet.non-transfer.best.hdf5"
+
+
+
+# Now that the model is created we can go ahead and train on it using the image generators we created earlier
+
+file_path = model_name + ".hdf5"
 
 checkpoint = ModelCheckpoint(file_path, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
@@ -101,31 +133,20 @@ history = model.fit_generator(
     validation_data=val_gen,
     steps_per_epoch=len(train_gen),
     validation_steps=len(val_gen),
-    epochs=2,
+    epochs=60,
     shuffle=True,
     verbose=True,
     callbacks=callbacks_list
 )
 
-# Create Test generator
-test_idg = ImageDataGenerator(
-    preprocessing_function=preprocess_input,
-)
-test_gen = test_idg.flow_from_directory(
-    './data/test',
-    target_size=(input_shape[0], input_shape[1]),
-    batch_size=batch_size,
-    shuffle=False
-
-)
-len(test_gen.filenames)
 
 
-# predicts
+
+# Finally we are going to grab predictions from our model, save it, and then run some analysis on the results
+
 predicts = model.predict_generator(test_gen, verbose=True, workers=1, steps=len(test_gen))
 
-
-keras_file = 'finished.h5'
+keras_file = model_name + 'finished.h5'
 keras.models.save_model(model, keras_file)
 
 print(predicts)
@@ -151,10 +172,10 @@ df["true_val"] = reals
 df.to_csv("sub1_non_transfer.csv", index=False)
 
 # Processed the saved results
-from sklearn.metrics import accuracy_score, confusion_matrix
 
 acc = accuracy_score(reals, predicts)
 conf_mat = confusion_matrix(reals, predicts)
+print(classification_report(reals, predicts, [l for l in label_index.values()]))
 print("Testing accuracy score is ", acc)
 print("Confusion Matrix", conf_mat)
 
@@ -164,3 +185,6 @@ plt.figure(figsize=(10, 7))
 sn.heatmap(df_cm, annot=True)
 plt.show()
 
+with open("labels.txt", "w") as f:
+    for label in label_index.values():
+        f.write(label + "\n")
