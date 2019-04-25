@@ -1,4 +1,5 @@
 import pandas as pd
+import multiprocessing
 
 from google_images_download import google_images_download
 
@@ -6,15 +7,19 @@ df = pd.read_csv("pokemon.csv")
 
 response = google_images_download.googleimagesdownload()
 
-for pokemon in df["identifier"][:251]:
-    absolute_image_paths = response.download(
+
+def get_images_for_pokemon(pokemon):
+    response.download(
         {
-            "keywords": pokemon,
+            "keywords": pokemon,# + " pokemon",
             "limit": 250,
-            "chromedriver": "/usr/lib/chromium-browser/chromedriver",
-            # This needs to be changed based on the computer trying to download the images
-            "format": "jpg"
+            "chromedriver": "chromedriver",
+            "thumbnail":True
+        #     Add chromedriver to your path or just point this var directly to your chromedriver
         }
     )
 
-# TODO: Need to clean data up here.... really should be added to another class as well you lazy asshole
+pool = multiprocessing.Pool(multiprocessing.cpu_count()*4)
+
+pool.map(get_images_for_pokemon, df["identifier"][:490])
+
