@@ -1,7 +1,7 @@
 from tensorflow.contrib.keras.api import keras
 from tensorflow.contrib import lite
 
-keras_file = "InceptionV3Full.hdf5"
+keras_file = "mobilenet.hdf5"
 keras.models.load_model(keras_file)
 
 h5_model = keras.models.load_model(keras_file)
