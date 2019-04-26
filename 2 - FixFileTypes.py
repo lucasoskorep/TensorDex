@@ -9,9 +9,11 @@ import imghdr
 import PIL
 from PIL import Image
 import sys
+import multiprocessing
+from threading import Thread, Lock
+
 
 directory = "downloads"
-
 
 def random_with_N_digits(n):
     range_start = 10 ** (n - 1)
@@ -26,12 +28,13 @@ def change_file_extension(file_obj, extension):
     elif not os.path.isfile(file_obj + extension):
         new_file = file_obj + extension
     else:
-        print(f"Found {extension} hiding as JPEG but couldn't rename:", file_obj)
+        # print(f"Found {extension} hiding as JPEG but couldn't rename:", file_obj)
         return
 
     print(f"Found {extension} hiding as JPEG, renaming:", file_obj, '->', new_file)
 
-    subprocess.run(['mv', file_obj, new_file])
+    # subprocess.run(['mv', file_obj, new_file])
+    os.rename(file_obj, new_file)
 
 
 def get_frames_from_gif(infile):
@@ -42,8 +45,7 @@ def get_frames_from_gif(infile):
         "Cant load", infile
         sys.exit(1)
 
-    i = 0
-
+    iterator = 0
     try:
         while 1:
             im2 = im.convert('RGBA')
@@ -52,57 +54,101 @@ def get_frames_from_gif(infile):
             background = Image.new("RGB", im2.size, (255, 255, 255))
             background.paste(im2, mask=im2.split()[3])
             background.save(filename, 'JPEG', quality=80)
-            print(f"FOUND GIF, SAVING FRAME AS {filename}")
-            i += 1
-            im.seek(im.tell() + 1)
-
+            # print(f"FOUND GIF, SAVING FRAME AS {filename}")
+            iterator += 1
+            while (iterator % 10 != 0):
+                im.seek(im.tell() + 1)
     except EOFError:
         pass  # end of sequence
 
 
-for root, dirs, files in os.walk(directory):
-
-    for file in files:
-
-        try:
-            file_obj = os.path.join(root, file)
-            exten = os.path.splitext(file)[1].lower()
-            img_type = imghdr.what(file_obj)
-            # print(file_obj)
-            if img_type is None:
-                os.remove(file_obj)
-            elif "jpeg" in img_type:
-                if "jpeg" not in exten and "jpg" not in exten:
-                    change_file_extension(file_obj, ".jpeg")
-            elif "png" in img_type:
-                if "png" not in exten:
-                    change_file_extension(file_obj, ".png")
-            elif "gif" in img_type:
-                get_frames_from_gif(file_obj)
-                os.remove(file_obj)
-            else:
-                os.remove(file_obj)
-
-        except Exception as e:
-            logging.error(traceback.format_exc())
-
 i = 1
-for root, dirs, files in os.walk(directory):
-    for file in files:
-        try:
-            file_obj = os.path.join(root, file)
-            path, file_base_name = os.path.split(file_obj)
-            old_path = os.path.splitext(file_base_name)
-            old_ext = old_path[1]
-            old_name = old_path[0]
-            new_file = os.path.join(path, str(i) + "-" + str(random_with_N_digits(10)) + old_ext)
-            if file_obj != new_file and "foo" not in old_name:
-                print(f"Moving file\n"
-                      f"{new_file}\n"
-                      f"{file_obj}")
-                subprocess.run(['mv', file_obj, new_file])
-                i += 1
-        except Exception as e:
-            logging.error(traceback.format_exc())
 
-print("Cleaning JPEGs done")
+
+def clean_image(file_root):
+    root = file_root[0]
+    file = file_root[1]
+    try:
+        file_obj = os.path.join(root, file)
+        exten = os.path.splitext(file)[1].lower()
+        img_type = imghdr.what(file_obj)
+        # print(file_obj)
+        if img_type is None:
+            os.remove(file_obj)
+        elif "jpeg" in img_type:
+            if "jpeg" not in exten and "jpg" not in exten:
+                change_file_extension(file_obj, ".jpeg")
+        elif "png" in img_type:
+            if "png" not in exten:
+                change_file_extension(file_obj, ".png")
+        elif "gif" in img_type:
+            get_frames_from_gif(file_obj)
+            os.remove(file_obj)
+        else:
+            os.remove(file_obj)
+    except Exception as e:
+        logging.error(traceback.format_exc())
+    mutex.acquire()
+    global i
+    i += 1
+    if i % 1 == 0:
+        print("changing type" + str(i))
+    mutex.release()
+
+
+ii = 1
+
+
+def rename_images(file_root):
+    root = file_root[0]
+    file = file_root[1]
+    try:
+        file_obj = os.path.join(root, file)
+        path, file_base_name = os.path.split(file_obj)
+        old_path = os.path.splitext(file_base_name)
+        old_ext = old_path[1]
+        old_name = old_path[0]
+        mutex.acquire()
+        global ii
+        ii += 1
+        new_file = os.path.join(path, str(ii) + "-" + str(random_with_N_digits(10)) + old_ext)
+        if ii % 1000 == 0:
+            print(f"Moving file"
+                  f"{new_file}"
+                  f"{file_obj} - {ii}")
+        mutex.release()
+
+        if file_obj != new_file and "foo" not in old_name:
+            # subprocess.run(['mv', file_obj, new_file])
+            os.rename(file_obj, new_file)
+
+
+    except Exception as e:
+        logging.error(traceback.format_exc())
+
+mutex = Lock()
+
+
+if __name__ == '__main__':
+
+
+    pool = multiprocessing.Pool(multiprocessing.cpu_count())
+
+    file_root_list = []
+
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_root_list.append((root, file))
+
+    pool.map(clean_image, file_root_list)
+
+    file_root_list = []
+
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            file_root_list.append((root, file))
+
+    pool.map(rename_images, file_root_list)
+
+    print("Cleaning JPEGs done")
+

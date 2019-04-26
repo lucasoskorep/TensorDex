@@ -1,6 +1,7 @@
 import os
 from random import random
 from shutil import copyfile, rmtree
+import multiprocessing
 
 train_dir = "./data/train/"
 test_dir = "./data/test/"
@@ -12,7 +13,6 @@ val = .05
 
 def add_train_data(file, filename, label):
     dest = train_dir + label + "/" + filename
-    print(dest, label, filename)
     if not os.path.exists(os.path.dirname(dest)):
         try:
             os.makedirs(os.path.dirname(dest))
@@ -56,25 +56,42 @@ def remove_previous():
         rmtree(val_dir)
 
 
-remove_previous()
 files_processed = 0
+def test_split_file(file_root):
+    global files_processed
+    root = file_root[0]
+    file = file_root[1]
+    # print(file)
 
-for root, dirs, files in os.walk("downloads/"):
+    if file is ".DS_Store":
+        return
+    c = random()
 
-    for file in files:
-        print(file)
+    if c < train:
+        add_train_data(os.path.join(root, file), file, root.split("/")[-1])
+    elif c < (train + val):
+        add_val_data(os.path.join(root, file), file, root.split("/")[-1])
+    else:
+        add_test_data(os.path.join(root, file), file, root.split("/")[-1])
+    files_processed += 1
 
-        if file is ".DS_Store":
-            continue
-        c = random()
-
-        if c < train:
-            add_train_data(os.path.join(root, file), file, root.split("/")[-1])
-        elif c < (train + val):
-            add_val_data(os.path.join(root, file), file, root.split("/")[-1])
-        else:
-            add_test_data(os.path.join(root, file), file, root.split("/")[-1])
-        files_processed += 1
+    if files_processed % 1000==0:
         print(root.split("/")[-1])
         print(files_processed)
         print(file)
+
+
+if __name__ == '__main__':
+    remove_previous()
+
+    file_root_list = []
+
+    for root, dirs, files in os.walk("downloads/"):
+        for file in files:
+            file_root_list.append((root, file))
+
+
+    pool = multiprocessing.Pool(multiprocessing.cpu_count()*2)
+
+    pool.map(test_split_file, file_root_list)
+

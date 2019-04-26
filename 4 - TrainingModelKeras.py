@@ -21,10 +21,10 @@ from PIL import ImageFile
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-input_shape = (299, 299, 3)
-batch_size = 32
+input_shape = (224, 224, 3)
+batch_size = 60
 
-model_name = "InceptionV3Full"
+model_name = "mobilenet"
 
 # Next we set up the Image Data Generators to feed into the training cycles.
 # We need one for training, validation, and testing
@@ -41,6 +41,7 @@ train_gen = train_idg.flow_from_directory(
     target_size=(input_shape[0], input_shape[1]),
     batch_size=batch_size
 )
+
 print(len(train_gen.classes))
 
 val_idg = ImageDataGenerator(
@@ -75,26 +76,28 @@ test_gen = test_idg.flow_from_directory(
 #     include_top=False,
 #     input_shape=input_shape
 # )
-base_model = inception_v3.InceptionV3(
-    weights='imagenet',
-    include_top=False,
-    input_shape=input_shape
-)
-
-# base_model = mobilenet_v2.MobileNetV2(
+# base_model = inception_v3.InceptionV3(
 #     weights='imagenet',
 #     include_top=False,
 #     input_shape=input_shape
 # )
+
+base_model = mobilenet_v2.MobileNetV2(
+    weights='imagenet',
+    include_top=False,
+    input_shape=input_shape
+)
 
 
 # Create a new top for that model
 add_model = Sequential()
 add_model.add(base_model)
 add_model.add(GlobalAveragePooling2D())
+add_model.add(Dense(4048, activation='relu'))
 add_model.add(Dropout(0.5))
-add_model.add(
-    Dense(1024, activation='relu'))  # Adding some dense layers in order to learn complex functions from the base model
+
+add_model.add(Dense(2024, activation='relu'))
+# Adding some dense layers in order to learn complex functions from the base model
 # Potentially throw another dropout layer here if you seem to be overfitting your
 add_model.add(Dropout(0.5))
 add_model.add(Dense(512, activation='relu'))
@@ -133,7 +136,7 @@ history = model.fit_generator(
     validation_data=val_gen,
     steps_per_epoch=len(train_gen),
     validation_steps=len(val_gen),
-    epochs=60,
+    epochs=25,
     shuffle=True,
     verbose=True,
     callbacks=callbacks_list
