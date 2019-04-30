@@ -22,9 +22,9 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 input_shape = (224, 224, 3)
-batch_size = 60
+batch_size = 96
 
-model_name = "mobilenet"
+model_name = "mobilenet-fixed-data"
 
 # Next we set up the Image Data Generators to feed into the training cycles.
 # We need one for training, validation, and testing
@@ -83,7 +83,7 @@ test_gen = test_idg.flow_from_directory(
 # )
 
 base_model = mobilenet_v2.MobileNetV2(
-    weights='imagenet',
+    # weights='imagenet',
     include_top=False,
     input_shape=input_shape
 )
@@ -93,8 +93,8 @@ base_model = mobilenet_v2.MobileNetV2(
 add_model = Sequential()
 add_model.add(base_model)
 add_model.add(GlobalAveragePooling2D())
-add_model.add(Dense(4048, activation='relu'))
-add_model.add(Dropout(0.5))
+# add_model.add(Dense(4048, activation='relu'))
+# add_model.add(Dropout(0.5))
 
 add_model.add(Dense(2024, activation='relu'))
 # Adding some dense layers in order to learn complex functions from the base model

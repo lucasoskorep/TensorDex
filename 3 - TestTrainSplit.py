@@ -6,8 +6,8 @@ import multiprocessing
 train_dir = "./data/train/"
 test_dir = "./data/test/"
 val_dir = "./data/val/"
-train = .75
-test = .20
+train = .80
+test = .15
 val = .05
 
 
@@ -24,7 +24,6 @@ def add_train_data(file, filename, label):
         print(e)
         print("INVALID FILE")
         os.remove(file)
-        # TODO: Remove the files
 
 
 def add_val_data(file, filename, label):
