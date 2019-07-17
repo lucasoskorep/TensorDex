@@ -6,8 +6,8 @@ import multiprocessing
 train_dir = "./data/train/"
 test_dir = "./data/test/"
 val_dir = "./data/val/"
-train = .80
-test = .15
+train = .5
+test = .5
 val = .05
 
 
