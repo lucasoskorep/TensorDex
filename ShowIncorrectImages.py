@@ -1,8 +1,6 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from pprint import pprint
 
 df = pd.read_csv("sub1_non_transfer.csv")
 df2 = pd.read_csv("poke_evos.csv")

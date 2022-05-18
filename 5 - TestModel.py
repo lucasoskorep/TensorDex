@@ -59,7 +59,7 @@ df.to_csv("sub1_non_transfer.csv", index=False)
 
 acc = accuracy_score(reals, predicts)
 conf_mat = confusion_matrix(reals, predicts)
-print(classification_report(reals, predicts, [l for l in label_index.values()]))
+print(classification_report(reals, predicts, labels=[l for l in label_index.values()]))
 print("Testing accuracy score is ", acc)
 print("Confusion Matrix", conf_mat)
 
@@ -67,7 +67,9 @@ df_cm = pd.DataFrame(conf_mat, index=[i for i in list(set(reals))],
                      columns=[i for i in list(set(reals))])
 print("made dataframe")
 plt.figure(figsize=(10, 7))
-sn.heatmap(df_cm, annot=True)
+print("made plot")
+# sn.heatmap(df_cm, annot=True)
+print("showing plot")
 plt.show()
 
 with open("labels.txt", "w") as f:

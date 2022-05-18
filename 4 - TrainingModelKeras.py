@@ -98,7 +98,6 @@ add_model.add(GlobalAveragePooling2D())
 
 add_model.add(Dense(2024, activation='relu'))
 # Adding some dense layers in order to learn complex functions from the base model
-# Potentially throw another dropout layer here if you seem to be overfitting your
 add_model.add(Dropout(0.5))
 add_model.add(Dense(512, activation='relu'))
 add_model.add(Dense(len(train_gen.class_indices), activation='softmax'))  # Decision layer
@@ -109,12 +108,11 @@ model.compile(loss='categorical_crossentropy',
               optimizer=optimizers.Adam(lr=1e-4),
               metrics=['accuracy'])
 model.summary()
-
-
-
+print(
+    model.output_shape
+)
 
 # Now that the model is created we can go ahead and train on it using the image generators we created earlier
-
 file_path = model_name + ".hdf5"
 
 checkpoint = ModelCheckpoint(file_path, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
@@ -141,8 +139,6 @@ history = model.fit_generator(
     verbose=True,
     callbacks=callbacks_list
 )
-
-
 
 
 # Finally we are going to grab predictions from our model, save it, and then run some analysis on the results

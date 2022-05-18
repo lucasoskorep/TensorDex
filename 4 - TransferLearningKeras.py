@@ -1,117 +1,138 @@
-import pandas as pd
-import numpy as np
-import seaborn as sn
-import matplotlib.pyplot as plt
-
 from time import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sn
 from PIL import ImageFile
+from tensorflow import keras
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-input_shape = (244, 244, 3)
+input_shape = (224, 224, 3)
 
-batch_size = 60
-model_name = "MobileNetV2FullDataset"
+batch_size = 64
+model_name = "TF2_Mobilenet_V2_transfer"
 
-from keras.preprocessing.image import ImageDataGenerator
-from keras.applications.inception_v3 import preprocess_input
+# preproc = keras.applications.inception_v3.preprocess_input
+preproc = keras.applications.mobilenet_v2.preprocess_input
 
-train_idg = ImageDataGenerator(
-    # horizontal_flip=True,
-    preprocessing_function=preprocess_input
+train_idg = keras.preprocessing.image.ImageDataGenerator(
+    horizontal_flip=True,
+    rescale=1. / 255,
+    # rotation_range=30,
+    # width_shift_range=[-.1, .1],
+    # height_shift_range=[-.1, .1],
+    # preprocessing_function=preproc
 )
 train_gen = train_idg.flow_from_directory(
-    './data/train',
+    './downloads',
     target_size=(input_shape[0], input_shape[1]),
-    batch_size=batch_size
-)
-val_idg = ImageDataGenerator(
-    # horizontal_flip=True,
-    preprocessing_function=preprocess_input
+    batch_size=batch_size,
+    class_mode='categorical',
+    shuffle=True,
+    color_mode='rgb'
 )
 
+val_idg = keras.preprocessing.image.ImageDataGenerator(
+    horizontal_flip=True,
+    rescale=1. / 255,
+    # rotation_range=30,
+    # width_shift_range=[-.1, .1],
+    # height_shift_range=[-.1, .1],
+    # preprocessing_function=keras.applications.mobilenet_v2.preprocess_input
+)
 val_gen = val_idg.flow_from_directory(
     './data/val',
     target_size=(input_shape[0], input_shape[1]),
-    batch_size=batch_size
+    batch_size=batch_size,
+    class_mode='categorical',
+    shuffle=True,
 )
 
-from keras.applications import inception_v3, mobilenet_v2, vgg16
-from keras.models import Sequential
-from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
-from keras import optimizers
-from keras.layers import Dense, Dropout, GlobalAveragePooling2D
-
+print((val_gen.classes))
 nclass = len(train_gen.class_indices)
+print(nclass)
+# for _ in range(5):
+#     img, label = train_gen.next()
+#     print(img.shape)  # (1,256,256,3)
+#     plt.imshow(img[0])
+#     plt.show()
+# plt.imshow(
 
 # base_model = vgg16.VGG16(
 #     weights='imagenet',
 #     include_top=False,
 #     input_shape=input_shape
 # )
-# base_model = inception_v3.InceptionV3(
+# base_model = keras.applications.InceptionV3(
+#     weights='imagenet',
+#     include_top=False,
+#     input_shape=input_shape
+# )
+# base_model = keras.applications.xception.Xception(
 #     weights='imagenet',
 #     include_top=False,
 #     input_shape=input_shape
 # )
 
-base_model = mobilenet_v2.MobileNetV2(
+base_model = keras.applications.mobilenet_v2.MobileNetV2(
     weights='imagenet',
     include_top=False,
     input_shape=input_shape
 )
 base_model.trainable = False
+# i = keras.layers.Input([input_shape[0], input_shape[1], input_shape[2]])
+i = base_model.input
+# x = preproc(i)
+# x = base_model
+x = keras.layers.GlobalAveragePooling2D()(base_model.output)
+x = keras.layers.Dense(1024, activation='relu')(x)
+x = keras.layers.Dropout(0.5)(x)
+output = keras.layers.Dense(nclass, activation='softmax')(x)
 
-add_model = Sequential()
-add_model.add(base_model)
-add_model.add(GlobalAveragePooling2D())
-add_model.add(Dropout(0.5))
-add_model.add(Dense(1024, activation='relu'))
-# Adding some dense layers in order to learn complex functions from the base model
-add_model.add(Dropout(0.5))
-add_model.add(Dense(512, activation='relu'))
-add_model.add(Dense(nclass, activation='softmax'))  # Decision layer
+model = keras.Model(inputs=i, outputs=output)
 
-model = add_model
-model.compile(loss='categorical_crossentropy',
-              # optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
-              optimizer=optimizers.Adam(lr=1e-4),
+model.compile(optimizer=keras.optimizers.Adam(learning_rate=.0001),
+              loss=keras.losses.CategoricalCrossentropy(),
               metrics=['accuracy'])
+
 model.summary()
+print(model.output_shape)
 
 # Train the model
 file_path = "weights.mobilenet.best.hdf5"
 
-checkpoint = ModelCheckpoint(file_path, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+checkpoint = keras.callbacks.ModelCheckpoint(file_path, monitor='val_loss', verbose=1, save_best_only=True,
+                                             mode='min')
 
-early = EarlyStopping(monitor="val_acc", mode="max", patience=15)
+early = keras.callbacks.EarlyStopping(monitor="loss", mode="min", patience=15)
 
-tensorboard = TensorBoard(
-    log_dir="logs/" + model_name + "{}".format(time()), histogram_freq=0, batch_size=batch_size,
+tensorboard = keras.callbacks.TensorBoard(
+    log_dir="logs/" + model_name + "{}".format(time()),
+    histogram_freq=1,
     write_graph=True,
-    write_grads=True,
     write_images=True,
-    update_freq=batch_size
-
+    update_freq=1,
+    profile_batch=2,
+    embeddings_freq=1
 )
 
 callbacks_list = [checkpoint, early, tensorboard]  # early
 
-history = model.fit_generator(
+history = model.fit(
     train_gen,
-    steps_per_epoch=len(train_gen),
     validation_data=val_gen,
-    validation_steps=len(val_gen),
-    epochs=5,
+    epochs=20,
+    batch_size=batch_size,
     shuffle=True,
     verbose=True,
     callbacks=callbacks_list
-
 )
 
 # Create Test generator
-test_idg = ImageDataGenerator(
-    preprocessing_function=preprocess_input,
+test_idg = keras.preprocessing.image.ImageDataGenerator(
+    rescale=1. / 255,
 )
 
 test_gen = test_idg.flow_from_directory(
@@ -127,7 +148,6 @@ score = model.evaluate_generator(test_gen, workers=1, steps=len(test_gen))
 
 # predicts
 predicts = model.predict_generator(test_gen, verbose=True, workers=1, steps=len(test_gen))
-
 
 print("Loss: ", score[0], "Accuracy: ", score[1])
 print(score)

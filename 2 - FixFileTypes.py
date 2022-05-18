@@ -40,8 +40,7 @@ def get_frames_from_gif(infile):
     try:
         im = Image.open(infile)
     except IOError:
-        print
-        "Cant load", infile
+        print("Cant load", infile)
         sys.exit(1)
 
     iterator = 0
@@ -89,7 +88,7 @@ def clean_image(file_root):
     mutex.acquire()
     global i
     i += 1
-    if i % 1 == 0:
+    if i % 100 == 0:
         print("changing type" + str(i))
     mutex.release()
 

@@ -1,14 +1,15 @@
 import os
 from random import random
 from shutil import copyfile, rmtree
+from pathlib import Path
 import multiprocessing
 
 train_dir = "./data/train/"
 test_dir = "./data/test/"
 val_dir = "./data/val/"
 train = .80
-test = .15
-val = .05
+test = .10
+val = .10
 
 
 def add_train_data(file, filename, label):
@@ -19,7 +20,7 @@ def add_train_data(file, filename, label):
         except Exception as e:
             print(e)
     try:
-        copyfile(file, dest)
+        Path(dest).absolute().symlink_to(Path(file).absolute())
     except Exception as e:
         print(e)
         print("INVALID FILE")
@@ -33,7 +34,8 @@ def add_val_data(file, filename, label):
             os.makedirs(os.path.dirname(dest))
         except Exception as e:
             print(e)
-    copyfile(file, dest)
+
+    Path(dest).absolute().symlink_to(Path(file).absolute())
 
 
 def add_test_data(file, filename, label):
@@ -43,7 +45,8 @@ def add_test_data(file, filename, label):
             os.makedirs(os.path.dirname(dest))
         except Exception as e:
             print(e)
-    copyfile(file, dest)
+
+    Path(dest).absolute().symlink_to(Path(file).absolute())
 
 
 def remove_previous():
@@ -62,7 +65,7 @@ def test_split_file(file_root):
     file = file_root[1]
     # print(file)
 
-    if file is ".DS_Store":
+    if file == ".DS_Store":
         return
     c = random()
 

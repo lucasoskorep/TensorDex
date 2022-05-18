@@ -59,8 +59,6 @@ def process_pokemon_names(df):
     return pokes_to_limits
 
 
-import os
-
 
 def get_images_for_pokemon(poke_to_limit):
     pokemon = poke_to_limit[0]
@@ -69,7 +67,7 @@ def get_images_for_pokemon(poke_to_limit):
     response.download(
         {
             "keywords": pokemon + " pokemon",
-            "limit": 1,#limit,
+            "limit": limit,
             "chromedriver": "chromedriver"
             # Add chromedriver to your path or just point this var directly to your chromedriverv
         }
