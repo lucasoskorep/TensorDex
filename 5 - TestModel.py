@@ -31,17 +31,17 @@ test_gen = test_idg.flow_from_directory(
 
 )
 
-predicts = model.predict_generator(test_gen, verbose=True, workers=1, steps=len(test_gen))
+predictions = model.predict_generator(test_gen, verbose=True, workers=1, steps=len(test_gen))
 
-print(predicts)
-print(type(predicts))
-print(predicts.shape)
+print(predictions)
+print(type(predictions))
+print(predictions.shape)
 # Process the predictions
-predicts = np.argmax(predicts,
-                     axis=1)
+predictions = np.argmax(predictions,
+                        axis=1)
 # test_gen.reset()
 label_index = {v: k for k, v in test_gen.class_indices.items()}
-predicts = [label_index[p] for p in predicts]
+predictions = [label_index[p] for p in predictions]
 reals = [label_index[p] for p in test_gen.classes]
 
 # Save the results
@@ -51,15 +51,15 @@ print(test_gen.classes.shape)
 print(type(test_gen.classes))
 df = pd.DataFrame(columns=['fname', 'prediction', 'true_val'])
 df['fname'] = [x for x in test_gen.filenames]
-df['prediction'] = predicts
+df['prediction'] = predictions
 df["true_val"] = reals
 df.to_csv("sub1_non_transfer.csv", index=False)
 
 # Processed the saved results
 
-acc = accuracy_score(reals, predicts)
-conf_mat = confusion_matrix(reals, predicts)
-print(classification_report(reals, predicts, labels=[l for l in label_index.values()]))
+acc = accuracy_score(reals, predictions)
+conf_mat = confusion_matrix(reals, predictions)
+print(classification_report(reals, predictions, labels=[l for l in label_index.values()]))
 print("Testing accuracy score is ", acc)
 print("Confusion Matrix", conf_mat)
 
