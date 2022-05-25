@@ -11,6 +11,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, TensorBoard
 from keras.layers import Dense, Dropout, GlobalAveragePooling2D
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import multi_gpu_model
 
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 
@@ -22,7 +23,7 @@ from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 input_shape = (224, 224, 3)
-batch_size = 96
+batch_size = 32
 
 model_name = "mobilenet-fixed-data"
 
@@ -53,7 +54,7 @@ val_idg = ImageDataGenerator(
 )
 
 val_gen = val_idg.flow_from_directory(
-    './data/val',
+    './data/test',
     target_size=(input_shape[0], input_shape[1]),
     batch_size=batch_size
 )
@@ -102,7 +103,10 @@ add_model.add(Dropout(0.5))
 add_model.add(Dense(512, activation='relu'))
 add_model.add(Dense(len(train_gen.class_indices), activation='softmax'))  # Decision layer
 
-model = add_model
+#TODO: Add in gpu support
+model = multi_gpu_model(add_model, 2)
+# model = add_model
+
 model.compile(loss='categorical_crossentropy',
               # optimizer=optimizers.SGD(lr=1e-4, momentum=0.9),
               optimizer=optimizers.Adam(lr=1e-4),

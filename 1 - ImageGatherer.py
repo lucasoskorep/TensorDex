@@ -5,6 +5,9 @@ import json
 from pprint import pprint
 from google_images_download import google_images_download
 
+total_per = 10
+form_increment = 1
+
 
 def create_forms_dict(df):
     poke_dict = {}
@@ -39,22 +42,26 @@ def process_pokemon_names(df):
     pprint(poke_dict)
     pokes_to_limits = []
     for pokemon, form_list in poke_dict.items():
-        if len(form_list) == 0:
-            print(pokemon)
-            pokes_to_limits.append((pokemon, 200))
+        print(pokemon)
+        num_forms = len(form_list)
+        if num_forms == 0:
+            pokes_to_limits.append((pokemon, total_per))
 
-        elif len(form_list) == 1:
-            pokes_to_limits.append((pokemon, 150))
-            pokes_to_limits.append((search_term(form_list[0]), 50))
+        elif num_forms == 1:
+            pokes_to_limits.append((pokemon, total_per - form_increment))
+            pokes_to_limits.append((search_term(form_list[0]), form_increment))
 
-        elif len(form_list) == 2:
-            pokes_to_limits.append((pokemon, 100))
+        elif num_forms == 2:
+            pokes_to_limits.append((pokemon, total_per - form_increment * num_forms))
             for form in form_list:
-                pokes_to_limits.append((search_term(form), 50))
+                pokes_to_limits.append((search_term(form), form_increment))
 
-        elif len(form_list) >= 3:
+        elif num_forms >= 3:
+            revised_increment = int(total_per / len(form_list))
             for form in form_list:
-                pokes_to_limits.append((search_term(form), int(200 / len(form_list))))
+                pokes_to_limits.append((pokemon, total_per - revised_increment * num_forms))
+
+                pokes_to_limits.append((search_term(form), revised_increment))
 
     return pokes_to_limits
 

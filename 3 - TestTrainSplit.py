@@ -1,6 +1,6 @@
 import os
 from random import random
-from shutil import copyfile, rmtree
+from shutil import rmtree
 from pathlib import Path
 import multiprocessing
 
