@@ -1,7 +1,8 @@
+import random
 from enum import Enum
-from time import time
 from typing import Tuple
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
@@ -94,5 +95,5 @@ class ImageClassModelBuilder(object):
     def get_name(self):
         return f"{'pt-' if self.pre_trained else ''}{'ft-' if self.fine_tune else ''}" \
                f"{self.base_model_type.value.name}-d{self.dense_layer_neurons}-do{self.dropout_rate}" \
-               f"{'-l1' + str(self.l1) if self.l1 > 0 else ''}{'-l2' + str(self.l2) if self.l2 > 0 else ''}" \
-               f"-{int(time())}"
+               f"{'-l1' + np.format_float_scientific(self.l1) if self.l1 > 0 else ''}{'-l2' + np.format_float_scientific(self.l2) if self.l2 > 0 else ''}" \
+               f"-{random.randint(1111, 9999)}"
