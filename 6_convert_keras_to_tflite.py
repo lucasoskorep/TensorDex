@@ -31,6 +31,7 @@ for file in glob("./models/keras/*.hdf5"):
         tflite_model = converter.convert()
         with open(tflite_file, 'wb') as f:
             f.write(tflite_model)
+        # TODO: Verify the model performance after converting to TFLITE
         # interpreter = tf.lite.Interpreter(model_path=tflite_file)
         # single_acc, single_ll = get_metrics(single_gen, keras_model)
         # tf_single_acc, tf_single_ll = get_metrics(single_gen, tflite_model)
