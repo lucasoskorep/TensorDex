@@ -7,8 +7,6 @@ import tensorflow as tf
 from keras.preprocessing.image import ImageDataGenerator
 from tensorflow import keras
 
-from modeling_utils import get_metrics
-
 # TODO: Move these to a config for the project
 input_shape = (224, 224, 3)
 batch_size = 32
