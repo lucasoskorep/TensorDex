@@ -25,6 +25,17 @@ class ImageClassModels(Enum):
         keras.applications.mobilenet_v2.preprocess_input,
         "mobilenet_v2"
     )
+    EFFICIENTNET_V2S = ModelWrapper(
+        keras.applications.efficientnet_v2.EfficientNetV2S,
+        tf.keras.applications.efficientnet_v2.preprocess_input,
+        "efficientnet_v2s"
+    )
+    EFFICIENTNET_V2B0 = ModelWrapper(
+        keras.applications.efficientnet_v2.EfficientNetV2B0,
+        tf.keras.applications.efficientnet_v2.preprocess_input,
+        "efficientnet_v2b0"
+
+    )
 
 
 class ImageClassModelBuilder(object):
@@ -35,7 +46,8 @@ class ImageClassModelBuilder(object):
                  optimizer: tf.keras.optimizers.Optimizer = keras.optimizers.Adam(
                      learning_rate=.0001),
                  pre_trained: bool = True,
-                 fine_tune: bool = False,
+                 freeze_batch_norm: bool = False,
+                 freeze_layers: bool = False,
                  base_model_type: ImageClassModels = ImageClassModels.MOBILENET_V2,
                  dense_layer_neurons: int = 1024,
                  dropout_rate: float = .5,
@@ -45,7 +57,8 @@ class ImageClassModelBuilder(object):
         self.n_classes = n_classes
         self.optimizer = optimizer
         self.pre_trained = pre_trained
-        self.fine_tune = fine_tune
+        self.freeze_layers = freeze_layers
+        self.freeze_batch_norm = freeze_batch_norm
         self.dense_layer_neurons = dense_layer_neurons
         self.dropout_rate = dropout_rate
         self.l1 = l1
@@ -61,8 +74,12 @@ class ImageClassModelBuilder(object):
         )
 
     def create_model(self):
-        if not self.fine_tune:
+        if self.freeze_layers:
             self.base_model.trainable = False
+        if self.freeze_batch_norm:
+            for layer in self.base_model.layers:
+                if isinstance(layer, keras.layers.BatchNormalization):
+                    layer.trainable = False
         i = tf.keras.layers.Input([self.input_shape[0], self.input_shape[1], self.input_shape[2]], dtype=tf.float32)
         x = tf.cast(i, tf.float32)
         x = self.base_model_type.value.model_preprocessor(x)
@@ -93,7 +110,7 @@ class ImageClassModelBuilder(object):
         return self.model
 
     def get_name(self):
-        return f"{'pt-' if self.pre_trained else ''}{'ft-' if self.fine_tune else ''}" \
+        return f"{'pt-' if self.pre_trained else ''}{'fl-' if self.freeze_layers else ''}{'fbn-' if self.freeze_batch_norm else ''}" \
                f"{self.base_model_type.value.name}-d{self.dense_layer_neurons}-do{self.dropout_rate}" \
                f"{'-l1' + np.format_float_scientific(self.l1) if self.l1 > 0 else ''}{'-l2' + np.format_float_scientific(self.l2) if self.l2 > 0 else ''}" \
                f"-{random.randint(1111, 9999)}"

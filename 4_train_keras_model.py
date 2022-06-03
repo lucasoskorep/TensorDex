@@ -3,9 +3,10 @@ from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import ImageFile
-from tensorflow import keras
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
-from model_builder import ImageClassModelBuilder, ImageClassModels
+from tensorflow import keras
+
+from modeling_utils import ImageClassModelBuilder, ImageClassModels
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -52,20 +53,18 @@ def get_gen(path, dataset_type: DatasetType = DatasetType.TRAIN):
     )
 
 
-def train_model(model_builder, train_gen, val_gen):
-    model = model_builder.create_model()
-    model_name = model_builder.get_name()
+def train_model(model, model_name, train_gen, val_gen):
     print(model)
     print(f"NOW TRAINING: {model_name}")
     checkpoint = keras.callbacks.ModelCheckpoint(
         f"./models/keras/{model_name}.hdf5",
-        monitor='val_loss',
+        monitor='val_categorical_crossentropy',
         verbose=1,
         save_best_only=True,
         mode='min'
     )
     early = keras.callbacks.EarlyStopping(
-        monitor="val_loss",
+        monitor="val_categorical_crossentropy",
         mode="auto",
         patience=4,
         restore_best_weights=True,
@@ -80,10 +79,10 @@ def train_model(model_builder, train_gen, val_gen):
         profile_batch=2,
         embeddings_freq=1,
     )
-    history = model.fit(
+    model.fit(
         train_gen,
         validation_data=val_gen,
-        epochs=8,
+        epochs=100,
         batch_size=batch_size,
         shuffle=True,
         verbose=True,
@@ -91,7 +90,6 @@ def train_model(model_builder, train_gen, val_gen):
         callbacks=[checkpoint, early, tensorboard],
         max_queue_size=1000
     )
-    print(history)
     return model
 
 
@@ -119,7 +117,6 @@ def test_model(model, test_gen):
     print("made dataframe")
     plt.figure(figsize=(10, 7))
     print("made plot")
-    # sn.heatmap(df_cm, annot=True)
     print("showing plot")
     plt.show()
 
@@ -131,15 +128,30 @@ if __name__ == "__main__":
             n_classes=807,
             optimizer=keras.optimizers.Adam(learning_rate=.0001),
             pre_trained=True,
-            fine_tune=True,
-            base_model_type=ImageClassModels.MOBILENET_V2,
+            freeze_layers=True,
+            freeze_batch_norm=True,
+            base_model_type=ImageClassModels.EFFICIENTNET_V2B0,
             dense_layer_neurons=1024,
             dropout_rate=.5,
         )
     ]
     for mb in model_builders:
+        model = mb.create_model()
+        model_name = mb.get_name()
         train_gen = get_gen('./data/train', dataset_type=DatasetType.TRAIN)
         val_gen = get_gen('./data/val', dataset_type=DatasetType.VAL)
         test_gen = get_gen('./data/test', dataset_type=DatasetType.TEST)
-        model = train_model(mb, train_gen, val_gen)
+        model = train_model(model, model_name, train_gen, val_gen)
+        for layer in model.layers[2].layers:
+            if not isinstance(layer, keras.layers.BatchNormalization):
+                layer.trainable = True
+        model.layers[2].trainable = True
+        print(model)
+        model.compile(
+            optimizer=keras.optimizers.Adam(learning_rate=.00001),
+            loss=keras.losses.CategoricalCrossentropy(),
+            metrics=['accuracy', 'categorical_crossentropy']
+        )
+        model.summary()
+        model = train_model(model, model_name + "-second_stage", train_gen, val_gen)
         test_model(model, test_gen)
