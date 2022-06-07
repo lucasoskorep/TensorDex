@@ -130,7 +130,7 @@ if __name__ == "__main__":
             pre_trained=True,
             freeze_layers=True,
             freeze_batch_norm=True,
-            base_model_type=ImageClassModels.EFFICIENTNET_V2B0,
+            base_model_type=ImageClassModels.EFFICIENTNET_V2S,
             dense_layer_neurons=1024,
             dropout_rate=.5,
         )

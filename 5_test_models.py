@@ -34,9 +34,7 @@ single_gen = ImageDataGenerator().flow_from_directory(
 
 
 for file in glob("./models/keras/*.hdf5"):
-
     print(file)
-    print(metrics_df["model"])
     if file in metrics_df.values:
         continue
     model = load_model(file)
