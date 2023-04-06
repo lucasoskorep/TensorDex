@@ -53,7 +53,7 @@ def get_gen(path, dataset_type: DatasetType = DatasetType.TRAIN):
     )
 
 
-def train_model(model, model_name, train_gen, val_gen):
+def train_model(model, model_name, train_gen, val_gen, max_epochs):
     print(model)
     print(f"NOW TRAINING: {model_name}")
     checkpoint = keras.callbacks.ModelCheckpoint(
@@ -82,7 +82,7 @@ def train_model(model, model_name, train_gen, val_gen):
     model.fit(
         train_gen,
         validation_data=val_gen,
-        epochs=100,
+        epochs=max_epochs,
         batch_size=batch_size,
         shuffle=True,
         verbose=True,
@@ -130,7 +130,47 @@ if __name__ == "__main__":
             pre_trained=True,
             freeze_layers=True,
             freeze_batch_norm=True,
-            base_model_type=ImageClassModels.EFFICIENTNET_V2S,
+            base_model_type=ImageClassModels.MOBILENET_V2,
+            dense_layer_neurons=1024,
+            dropout_rate=.5,
+        ),        ImageClassModelBuilder(
+            input_shape=input_shape,
+            n_classes=807,
+            optimizer=keras.optimizers.Adam(learning_rate=.0001),
+            pre_trained=True,
+            freeze_layers=True,
+            freeze_batch_norm=True,
+            base_model_type=ImageClassModels.INCEPTION_RESNET_V2,
+            dense_layer_neurons=1024,
+            dropout_rate=.5,
+        ),        ImageClassModelBuilder(
+            input_shape=input_shape,
+            n_classes=807,
+            optimizer=keras.optimizers.Adam(learning_rate=.0001),
+            pre_trained=True,
+            freeze_layers=True,
+            freeze_batch_norm=True,
+            base_model_type=ImageClassModels.INCEPTION_V3,
+            dense_layer_neurons=1024,
+            dropout_rate=.5,
+        ),        ImageClassModelBuilder(
+            input_shape=input_shape,
+            n_classes=807,
+            optimizer=keras.optimizers.Adam(learning_rate=.0001),
+            pre_trained=True,
+            freeze_layers=True,
+            freeze_batch_norm=True,
+            base_model_type=ImageClassModels.XCEPTION,
+            dense_layer_neurons=1024,
+            dropout_rate=.5,
+        ),        ImageClassModelBuilder(
+            input_shape=input_shape,
+            n_classes=807,
+            optimizer=keras.optimizers.Adam(learning_rate=.0001),
+            pre_trained=True,
+            freeze_layers=True,
+            freeze_batch_norm=True,
+            base_model_type=ImageClassModels.DENSENET201,
             dense_layer_neurons=1024,
             dropout_rate=.5,
         )
@@ -141,17 +181,17 @@ if __name__ == "__main__":
         train_gen = get_gen('./data/train', dataset_type=DatasetType.TRAIN)
         val_gen = get_gen('./data/val', dataset_type=DatasetType.VAL)
         test_gen = get_gen('./data/test', dataset_type=DatasetType.TEST)
-        model = train_model(model, model_name, train_gen, val_gen)
-        for layer in model.layers[2].layers:
-            if not isinstance(layer, keras.layers.BatchNormalization):
-                layer.trainable = True
-        model.layers[2].trainable = True
-        print(model)
-        model.compile(
-            optimizer=keras.optimizers.Adam(learning_rate=.00001),
-            loss=keras.losses.CategoricalCrossentropy(),
-            metrics=['accuracy', 'categorical_crossentropy']
-        )
-        model.summary()
-        model = train_model(model, model_name + "-second_stage", train_gen, val_gen)
-        test_model(model, test_gen)
+        model = train_model(model, model_name, train_gen, val_gen, 1)
+        # for layer in model.layers[2].layers:
+        #     if not isinstance(layer, keras.layers.BatchNormalization):
+        #         layer.trainable = True
+        # model.layers[2].trainable = True
+        # print(model)
+        # model.compile(
+        #     optimizer=keras.optimizers.Adam(learning_rate=.00001),
+        #     loss=keras.losses.CategoricalCrossentropy(),
+        #     metrics=['accuracy', 'categorical_crossentropy']
+        # )
+        # model.summary()
+        # model = train_model(model, model_name + "-second_stage", train_gen, val_gen, 1)
+        # test_model(model, test_gen)

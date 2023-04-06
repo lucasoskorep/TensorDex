@@ -19,7 +19,6 @@ for index, row in df2.iterrows():
 incorrect = df[df["prediction"]!= df["true_val"]]
 
 total_same_fam = 0
-# TODO: Add in support for figuring out if the pokemon are related/evolutions of one another
 for index, row in incorrect.iterrows():
     img = mpimg.imread("./SingleImageTestSet/" + row['fname'])
     imgplot = plt.imshow(img)

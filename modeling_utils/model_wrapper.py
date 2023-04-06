@@ -1,5 +1,4 @@
-from collections import Callable
-
+from typing import Callable
 
 class ModelWrapper(object):
     def __init__(self, model_func:Callable, model_preprocessor:Callable, name:str):

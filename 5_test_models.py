@@ -24,14 +24,13 @@ test_gen = ImageDataGenerator().flow_from_directory(
     batch_size=batch_size,
     shuffle=False
 )
-#
+
 single_gen = ImageDataGenerator().flow_from_directory(
     './single_image_test_set',
     target_size=(input_shape[0], input_shape[1]),
     batch_size=batch_size,
     shuffle=False
 )
-
 
 for file in glob("./models/keras/*.hdf5"):
     print(file)

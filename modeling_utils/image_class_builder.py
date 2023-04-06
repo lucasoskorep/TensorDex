@@ -15,10 +15,20 @@ class ImageClassModels(Enum):
         keras.applications.inception_v3.preprocess_input,
         "inception_v3"
     )
+    INCEPTION_RESNET_V2 = ModelWrapper(
+        keras.applications.inception_resnet_v2.InceptionResNetV2,
+        keras.applications.inception_resnet_v2.preprocess_input,
+        "inception_resnet_v2"
+    )
     XCEPTION = ModelWrapper(
         keras.applications.xception.Xception,
         keras.applications.xception.preprocess_input,
         "xception"
+    )
+    DENSENET201 = ModelWrapper(
+        keras.applications.densenet.DenseNet201,
+        keras.applications.densenet.preprocess_input,
+        "densenet201"
     )
     MOBILENET_V2 = ModelWrapper(
         keras.applications.mobilenet_v2.MobileNetV2,
@@ -34,7 +44,6 @@ class ImageClassModels(Enum):
         keras.applications.efficientnet_v2.EfficientNetV2B0,
         tf.keras.applications.efficientnet_v2.preprocess_input,
         "efficientnet_v2b0"
-
     )
 
 
